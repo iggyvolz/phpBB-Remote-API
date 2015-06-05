@@ -13,7 +13,10 @@ class phpbbRemoteApi
   public function __construct($url,$f,$t,$user=NULL,$pass=NULL)
   {
     list($this->url,$this->f,$this->t,$this->user,$this->pass)=[$url,$f,$t,$user,$pass];
-    $this->login();
+    if($user&&$pass)
+    {
+      $this->login();
+    }
   }
   public function login()
   {
