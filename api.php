@@ -51,7 +51,7 @@ class phpbbRemoteApi
   }
   public function get_post($s)
   {
-    return unseialize(file_get_contents("posts/$s"));
+    return unserialize(file_get_contents("posts/$s"));
   }
   public function update_num_posts()
   {
