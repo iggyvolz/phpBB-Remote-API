@@ -1,0 +1,15 @@
+{
+    "name": "iggyvolz/phpbb-remote-api",
+    "description": "Remote API for phpBB",
+    "type": "library",
+    "require": {
+        "php": ">=5.3.0"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "iggyvolz",
+            "email": "iggyvolz@gmail.com"
+        }
+    ]
+}
