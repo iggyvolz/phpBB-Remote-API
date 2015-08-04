@@ -10,7 +10,7 @@ class phpbbRemoteApi
   private $pass;
   public $num_posts;
   private $handle;
-  public function __construct($url,$f,$t,$user=NULL,$pass=NULL)
+  public function __construct($url,$f,$t=NULL,$user=NULL,$pass=NULL)
   {
     list($this->url,$this->f,$this->t,$this->user,$this->pass)=[$url,$f,$t,$user,$pass];
     if($user&&$pass)
