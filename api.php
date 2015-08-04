@@ -5,14 +5,13 @@ class phpbbRemoteApi
   const TIMEOUT=50;
   public $url;
   public $f;
-  public $t;
   public $user;
   private $pass;
   public $num_posts;
   private $handle;
-  public function __construct($url,$f,$t=NULL,$user=NULL,$pass=NULL)
+  public function __construct($url,$f,$user=NULL,$pass=NULL)
   {
-    list($this->url,$this->f,$this->t,$this->user,$this->pass)=[$url,$f,$t,$user,$pass];
+    list($this->url,$this->f,$this->user,$this->pass)=[$url,$f,$user,$pass];
     if($user&&$pass)
     {
       $this->login();
@@ -54,26 +53,17 @@ class phpbbRemoteApi
     }
     return $handle;
   }
-  public function download_post($s)
+  public function get_post($t,$s)
   {
-    file_put_contents("posts/$s",serialize(new phpBBPost($this->url,$this->f,$this->t,$s)));
+    return new phpBBPost($this->url,$this->f,$t,$s);
   }
   public function download_pm($p)
   {
-    file_put_contents("pms/$p",serialize(new phpBBPM($this->url,$p)));
-    file_put_contents("pms/unhandled",file_get_contents("pms/unhandled")."\n$p");
+    return new phpBBPM($this->url,$p);
   }
-  public function get_post($s)
+  public function num_posts($t)
   {
-    return unserialize(file_get_contents("posts/$s"));
-  }
-  public function get_pm($p)
-  {
-    return unserialize(file_get_contents("pms/$p"));
-  }
-  public function update_num_posts()
-  {
-    $handle=$this->curlrequest(sprintf("%s/viewtopic.php?f=%u&t=%u",$this->url,$this->f,$this->t));
+    $handle=$this->curlrequest(sprintf("%s/viewtopic.php?f=%u&t=%u",$this->url,$this->f,$t));
     $result=curl_exec($handle);
     curl_close($handle);
     $nresult=explode(" posts",explode("</div>",explode("<div class=\"pagination\">",$result)[1])[0])[0];
@@ -106,9 +96,9 @@ class phpbbRemoteApi
     curl_close($handle);
     return $result;
   }
-  public function create_post($subject,$message)
+  public function create_post($t,$subject,$message)
   {
-    $ihandle=$this->curlrequest(sprintf("%s/posting.php?mode=reply&f=%u&t=%u",$this->url,$this->f,$this->t));
+    $ihandle=$this->curlrequest(sprintf("%s/posting.php?mode=reply&f=%u&t=%u",$this->url,$this->f,$t));
     $iresult=curl_exec($ihandle);
     curl_close($ihandle);
     $topic_cur_post_id=explode("\"",explode("<input type=\"hidden\" name=\"topic_cur_post_id\" value=\"",$iresult)[1])[0];
@@ -118,7 +108,7 @@ class phpbbRemoteApi
     $sid=explode("\"",explode("<input type=\"hidden\" name=\"sid\" value=\"",$iresult)[1])[0];
     $forum_id=explode("\"",explode("<input type=\"hidden\" name=\"forum_id\" value=\"",$iresult)[1])[0];
     $topic_id=explode("\"",explode("<input type=\"hidden\" name=\"topic_id\" value=\"",$iresult)[1])[0];
-    $handle=$this->curlrequest(sprintf("%s/posting.php?mode=reply&f=%u&t=%u",$this->url,$this->f,$this->t),["subject"=>$subject,"addbbcode20"=>"100","message"=>$message,"topic_cur_post_id"=>$topic_cur_post_id,"lastclick"=>$lastclick,"post"=>"Submit","attach_sig"=>"on","creation_time"=>$creation_time,"form_token"=>$form_token,"sid"=>$sid,"forum_id"=>$forum_id,"topic_id"=>$topic_id]);
+    $handle=$this->curlrequest(sprintf("%s/posting.php?mode=reply&f=%u&t=%u",$this->url,$this->f,$t),["subject"=>$subject,"addbbcode20"=>"100","message"=>$message,"topic_cur_post_id"=>$topic_cur_post_id,"lastclick"=>$lastclick,"post"=>"Submit","attach_sig"=>"on","creation_time"=>$creation_time,"form_token"=>$form_token,"sid"=>$sid,"forum_id"=>$forum_id,"topic_id"=>$topic_id]);
     $result=curl_exec($handle);
     curl_close($handle);
     return $result;
