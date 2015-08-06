@@ -11,5 +11,10 @@
             "name": "iggyvolz",
             "email": "iggyvolz@gmail.com"
         }
-    ]
+    ],
+    "autoload": {
+      "psr-0": {
+        "phpbbRemoteApi": "src/"
+      }
+    }
 }

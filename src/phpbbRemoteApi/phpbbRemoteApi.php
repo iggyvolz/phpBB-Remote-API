@@ -1,4 +1,5 @@
 <?php
+namespace phpbbRemoteApi;
 class phpbbRemoteApi
 {
   const COOKIE_FILE="cookies.txt";
