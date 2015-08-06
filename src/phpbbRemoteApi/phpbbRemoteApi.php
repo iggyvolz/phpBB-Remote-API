@@ -169,7 +169,7 @@ class phpBBPost
     $result=curl_exec($handle);
     curl_close($handle);
     //file_put_contents("result.html",$result);
-    $dom = new DOMDocument;
+    $dom = new \DOMDocument;
     @$dom->loadHTML($result);
     $nodes = $dom->getElementsByTagName('blockquote');
     while($nodes->item(0))
