@@ -179,7 +179,7 @@ class phpBBPost
     }
     $result=$dom->saveHTML();
     $this->author=explode("<",explode("\">",explode("<strong><a href",explode("<p class=\"author\">",$result)[1])[1])[1])[0];
-    $this->time=new \DateTime(explode(" </p>",explode("</strong> &raquo; ",explode("<p class=\"author\">",$result)[1])[1])[0]);
+    $this->time=new \DateTime(explode(" </p>",explode("</strong> » ",explode("<p class=\"author\">",$result)[1])[1])[0]);
     $this->conts=trim(strip_tags(substr(explode("<dl class=\"postprofile\"",explode("<div class=\"content\">",$result)[1])[0],0,-4)));
   }
   private function curlrequest($url,$params=NULL)
