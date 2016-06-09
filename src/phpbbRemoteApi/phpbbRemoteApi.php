@@ -1,5 +1,12 @@
 <?php
 namespace phpbbRemoteApi;
+class notLoggedInException extends \Exception
+{
+  public function __construct()
+  {
+    parent::__construct("Exception: Not logged in to phpBB", 0);
+  }
+}
 class phpbbRemoteApi
 {
   const COOKIE_FILE="cookies.txt";
@@ -159,18 +166,26 @@ class phpBBPost
   public $f;
   public $t;
   public $s;
+  public $p;
   public $author;
   public $time;
-  public $conts;
+  public $rawconts;
+  public $rawcontsnoquotes;
+  public $htmlconts;
+  private $bbcconts; // Handled by phpbbRemoteApiNotLoggedInException if null
   public function __construct($url,$f,$t,$s)
   {
     list($this->f,$this->t,$this->s)=[$f,$t,$s];
     $handle=$this->curlrequest(sprintf("%s/viewtopic.php?f=%u&t=%u&start=%u",$url,$f,$t,$s));
     $result=curl_exec($handle);
     curl_close($handle);
-    //file_put_contents("result.html",$result);
+    $this->author=explode("<",explode("\">",explode("<strong><a href",explode("<p class=\"author\">",$result)[1])[1])[1])[0];
+    $this->time=new \DateTime(trim(explode("</p>",explode("&raquo;",explode("<p class=\"author\">",$result)[1])[1])[0]));
+    $this->p=(int)(explode("p",explode('" class="post ',$result)[0])[count(explode("p",explode('" class="post ',$result)[0]))-1]);
+    $this->htmlconts=trim(substr(trim(substr(trim(explode("<dl class=\"postprofile",explode("<div class=\"content\">",$result)[1])[0]),0,-6)),0,-6));
+    $this->rawconts=trim(strip_tags($this->htmlconts));
     $dom = new \DOMDocument;
-    @$dom->loadHTML($result);
+    @$dom->loadHTML($this->htmlconts);
     $nodes = $dom->getElementsByTagName('blockquote');
     while($nodes->item(0))
     {
@@ -178,9 +193,35 @@ class phpBBPost
       $nodes = $dom->getElementsByTagName('blockquote');
     }
     $result=$dom->saveHTML();
-    $this->author=explode("<",explode("\">",explode("<strong><a href",explode("<p class=\"author\">",$result)[1])[1])[1])[0];
-    $this->time=new \DateTime(explode(" </p>",explode("</strong> » ",explode("<p class=\"author\">",$result)[1])[1])[0]);
-    $this->conts=trim(strip_tags(substr(explode("<dl class=\"postprofile\"",explode("<div class=\"content\">",$result)[1])[0],0,-4)));
+    $this->rawcontsnoquotes=trim(strip_tags($result));
+    $handle2=$this->curlrequest(sprintf("%s/ucp.php?i=pm&mode=compose&action=quotepost&p=%u",$url,$this->p));
+    $result2=curl_exec($handle2);
+    curl_close($handle2);
+    $tmp=@explode("\n",trim(explode("</textarea>",explode('class="inputbox">',$result2)[1])[0]));
+    if($tmp)
+    {
+      array_shift($tmp);
+      array_shift($tmp);
+      $tmp2=implode("\n",$tmp);
+      $tmp3=explode("]",$tmp2);
+      array_shift($tmp3);
+      $tmp4=implode("]",$tmp3);
+      $this->bbcconts=substr($tmp4,0,-8);
+    }
+  }
+  public function __get($a)
+  {
+    if($a=="bbcconts")
+    {
+      if($this->bbconts)
+      {
+        return $this->bbconts;
+      }
+      else
+      {
+        throw new phpbbRemoteApiNotLoggedInException();
+      }
+    }
   }
   private function curlrequest($url,$params=NULL)
   {
