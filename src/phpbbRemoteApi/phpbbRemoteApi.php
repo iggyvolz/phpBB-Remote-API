@@ -61,6 +61,18 @@ class phpbbRemoteApi
     }
     return $handle;
   }
+  public function get_page($f,$t,$s)
+  {
+    $handle=$this->curlrequest(sprintf("%s/viewtopic.php?f=%u&t=%u&start=%u",$this->url,$f,$t,$s));
+    $result=curl_exec($handle);
+    curl_close($handle);
+    $return=[];
+    foreach(explode("<h3 >",$result) as $i=>$post)
+    {
+      $return[]=new phpBBPost($this->url,$f,$t,$s+$i,$post);
+    }
+    return $return;
+  }
   public function get_post($f,$t,$s)
   {
     return new phpBBPost($this->url,$f,$t,$s);
@@ -164,6 +176,7 @@ class phpbbRemoteApi
 }
 class phpBBPost
 {
+  public $url;
   public $f;
   public $t;
   public $s;
@@ -174,12 +187,15 @@ class phpBBPost
   public $rawcontsnoquotes;
   public $htmlconts;
   private $bbcconts; // Handled by phpbbRemoteApiNotLoggedInException if null
-  public function __construct($url,$f,$t,$s)
+  public function __construct($url,$f,$t,$s,$result=null)
   {
-    list($this->f,$this->t,$this->s)=[$f,$t,$s];
-    $handle=$this->curlrequest(sprintf("%s/viewtopic.php?f=%u&t=%u&start=%u",$url,$f,$t,$s));
-    $result=curl_exec($handle);
-    curl_close($handle);
+    list($this->url,$this->f,$this->t,$this->s)=[$url,$f,$t,$s];
+    if(!$result)
+    {
+      $handle=$this->curlrequest(sprintf("%s/viewtopic.php?f=%u&t=%u&start=%u",$url,$f,$t,$s));
+      $result=curl_exec($handle);
+      curl_close($handle);
+    }
     $this->author=explode("<",explode("\">",explode("<strong><a href",explode("<p class=\"author\">",$result)[1])[1])[1])[0];
     $this->time=new \DateTime(trim(explode("</p>",explode("&raquo;",explode("<p class=\"author\">",$result)[1])[1])[0]));
     $this->p=(int)(explode("p",explode('" class="post ',$result)[0])[count(explode("p",explode('" class="post ',$result)[0]))-1]);
@@ -195,10 +211,27 @@ class phpBBPost
     }
     $result=$dom->saveHTML();
     $this->rawcontsnoquotes=trim(strip_tags($result));
-    $handle2=$this->curlrequest(sprintf("%s/ucp.php?i=pm&mode=compose&action=quotepost&p=%u",$url,$this->p));
-    $result2=curl_exec($handle2);
-    curl_close($handle2);
-    $tmp=@explode("\n",trim(explode("</textarea>",explode('class="inputbox">',$result2)[1])[0]));
+  }
+  public function __get($a)
+  {
+    if($a=="bbconts")
+    {
+      if($this->bbconts or $this->bbconts=$this->bbconts())
+      {
+        return $this->bbconts;
+      }
+      else
+      {
+        throw new NotLoggedInException();
+      }
+    }
+  }
+  private function bbconts()
+  {
+    $handle=$this->curlrequest(sprintf("%s/ucp.php?i=pm&mode=compose&action=quotepost&p=%u",$this->url,$this->p));
+    $result=curl_exec($handle);
+    curl_close($handle);
+    $tmp=@explode("\n",trim(explode("</textarea>",explode('class="inputbox">',$result)[1])[0]));
     if($tmp)
     {
       array_shift($tmp);
@@ -207,21 +240,11 @@ class phpBBPost
       $tmp3=explode("]",$tmp2);
       array_shift($tmp3);
       $tmp4=implode("]",$tmp3);
-      $this->bbcconts=substr($tmp4,0,-8);
+      return substr($tmp4,0,-8);
     }
-  }
-  public function __get($a)
-  {
-    if($a=="bbcconts")
+    else
     {
-      if($this->bbconts)
-      {
-        return $this->bbconts;
-      }
-      else
-      {
-        throw new phpbbRemoteApiNotLoggedInException();
-      }
+      return null;
     }
   }
   private function curlrequest($url,$params=NULL)
