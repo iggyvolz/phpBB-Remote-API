@@ -32,17 +32,9 @@ class phpbbRemoteApi
     curl_close($handle);
     return $result;
   }
-  private function curlrequest($url,$params=NULL,$hidelog=false)
+  private function curlrequest($url,$params=NULL)
   {
-    if($hidelog)
-    {
-      echo "CURL REQUEST TO $url WITH PARAMS [REDACTED]\n";
-    }
-    else
-    {
-      $pparams=json_encode($params);
-      echo "CURL REQUEST TO $url WITH PARAMS $pparams\n";
-    }
+    echo "CURL REQUEST TO $url WITH PARAMS ".json_encode($params)."\n";
     sleep(3);
     $handle=curl_init($url);
     curl_setopt($handle, CURLOPT_COOKIEFILE, phpbbRemoteApi::COOKIE_FILE);
@@ -112,6 +104,34 @@ class phpbbRemoteApi
     $confirm_uid=explode("\"",explode("<input type=\"hidden\" name=\"confirm_uid\" value=\"",$iresult)[1])[0];
     $sess=explode("\"",explode("<input type=\"hidden\" name=\"sess\" value=\"",$iresult)[1])[0];
     $handle=$this->curlrequest(sprintf("%s/ucp.php?i=pm&mode=compose&action=delete&f=0&p=$p&confirm_key=$confirm_key",$this->url),["confirm_uid"=>$confirm_uid,"p"=>$p,"f"=>"0","action"=>"delete","sess"=>$sess,"sid"=>$sess,"confirm"=>"Yes"],true);
+    $result=curl_exec($handle);
+    curl_close($handle);
+    return $result;
+  }
+  public function lock_thread($f,$t)
+  {
+    $ihandle=$this->curlrequest(sprintf("%s/mcp.php?f=%u&t=%u&quickmod=1",$this->url,$f,$t),["action"=>"lock"]);
+    $iresult=curl_exec($ihandle);
+    curl_close($ihandle);
+    echo $iresult;
+    $confirm_key=explode("\"",explode("<form id=\"confirm\" action=\"./mcp.php?f=$f&amp;t=$t&amp;quickmod=1&amp;confirm_key=",$iresult)[1])[0];
+    $confirm_uid=explode("\"",explode("<input type=\"hidden\" name=\"confirm_uid\" value=\"",$iresult)[1])[0];
+    $sess=explode("\"",explode("<input type=\"hidden\" name=\"sess\" value=\"",$iresult)[1])[0];
+    $handle=$this->curlrequest(sprintf("%s/mcp.php?f=%u&t=%u&quickmod=1&confirm_key=%s",$this->url,$f,$t,$confirm_key),["topic_id_list[0]"=>$t,"action"=>"lock","confirm_uid"=>$confirm_uid,"sess"=>$sess,"sid"=>$sess,"confirm"=>"Yes"]);
+    $result=curl_exec($handle);
+    curl_close($handle);
+    return $result;
+  }
+  public function unlock_thread($f,$t)
+  {
+    $ihandle=$this->curlrequest(sprintf("%s/mcp.php?f=%u&t=%u&quickmod=1",$this->url,$f,$t),["action"=>"unlock"]);
+    $iresult=curl_exec($ihandle);
+    curl_close($ihandle);
+    echo $iresult;
+    $confirm_key=explode("\"",explode("<form id=\"confirm\" action=\"./mcp.php?f=$f&amp;t=$t&amp;quickmod=1&amp;confirm_key=",$iresult)[1])[0];
+    $confirm_uid=explode("\"",explode("<input type=\"hidden\" name=\"confirm_uid\" value=\"",$iresult)[1])[0];
+    $sess=explode("\"",explode("<input type=\"hidden\" name=\"sess\" value=\"",$iresult)[1])[0];
+    $handle=$this->curlrequest(sprintf("%s/mcp.php?f=%u&t=%u&quickmod=1&confirm_key=%s",$this->url,$f,$t,$confirm_key),["topic_id_list[0]"=>$t,"action"=>"unlock","confirm_uid"=>$confirm_uid,"sess"=>$sess,"sid"=>$sess,"confirm"=>"Yes"]);
     $result=curl_exec($handle);
     curl_close($handle);
     return $result;
@@ -290,17 +310,9 @@ class phpBBPM
     $this->subject=strip_tags(explode("</h3>",explode("<h3 class=\"first\">",$result)[1])[0]);
     $this->conts=strip_tags(explode("</div>",explode("<div class=\"content\">",$result)[1])[0]);
   }
-  private function curlrequest($url,$params=NULL,$hidelog=false)
+  private function curlrequest($url,$params=NULL)
   {
-    if($hidelog)
-    {
-      echo "CURL REQUEST TO $url WITH PARAMS [REDACTED]\n";
-    }
-    else
-    {
-      $pparams=json_encode($params);
-      echo "CURL REQUEST TO $url WITH PARAMS $pparams\n";
-    }
+    echo "CURL REQUEST TO $url WITH PARAMS ".json_encode($params)."\n";
     sleep(3);
     $handle=curl_init($url);
     curl_setopt($handle, CURLOPT_COOKIEFILE, phpbbRemoteApi::COOKIE_FILE);
