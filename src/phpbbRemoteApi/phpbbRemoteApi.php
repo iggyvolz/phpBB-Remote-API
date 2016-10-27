@@ -32,7 +32,7 @@ class phpbbRemoteApi
     curl_close($handle);
     return $result;
   }
-  private function curlrequest($url,$params=NULL)
+  public function curlrequest($url,$params=NULL)
   {
     echo "CURL REQUEST TO $url WITH PARAMS ".json_encode($params)."\n";
     sleep(3);
@@ -57,9 +57,12 @@ class phpbbRemoteApi
   {
     $handle=$this->curlrequest(sprintf("%s/viewtopic.php?f=%u&t=%u&start=%u",$this->url,$f,$t,$s));
     $result=curl_exec($handle);
+    preg_match_all("/<h3(.+)?>((.+)<ul class=\"profile-icons\">(.+)<\/ul>)/Us", $result, $matches);
+    // Walk over array, matching the entire post
+    $matches=$matches[0];
     curl_close($handle);
     $return=[];
-    foreach(explode("<h3 >",$result) as $i=>$post)
+    foreach($matches as $i=>$post)
     {
       $return[]=new phpBBPost($this->url,$f,$t,$s+$i,$post);
     }
@@ -67,7 +70,7 @@ class phpbbRemoteApi
   }
   public function get_post($f,$t,$s)
   {
-    return new phpBBPost($this->url,$f,$t,$s);
+    return $this->get_page($f,$t,$s)[0];
   }
   public function download_pm($p)
   {
@@ -206,6 +209,7 @@ class phpBBPost
   public $rawconts;
   public $rawcontsnoquotes;
   public $htmlconts;
+  public $read;
   private $bbcconts; // Handled by phpbbRemoteApiNotLoggedInException if null
   public function __construct($url,$f,$t,$s,$result=null)
   {
@@ -216,11 +220,25 @@ class phpBBPost
       $result=curl_exec($handle);
       curl_close($handle);
     }
-    $this->author=explode("<",explode("\">",explode("<strong><a href",explode("<p class=\"author\">",$result)[1])[1])[1])[0];
-    $this->time=new \DateTime(trim(explode("</p>",explode("&raquo;",explode("<p class=\"author\">",$result)[1])[1])[0]));
-    $this->p=(int)(explode("p",explode('" class="post ',$result)[0])[count(explode("p",explode('" class="post ',$result)[0]))-1]);
-    $this->htmlconts=trim(substr(trim(substr(trim(explode("<dl class=\"postprofile",explode("<div class=\"content\">",$result)[1])[0]),0,-6)),0,-6));
+    $authorarr=[];
+    preg_match("/by <strong><a href=\".\/memberlist.php\?mode=viewprofile&amp;u=[0-9]+\"(.+)?>(.+)<\/a><\/strong> &raquo; (.+)<\/p>/Us", $result, $authorarr);
+    $this->author=$authorarr[2];
+    $this->time=new \DateTime($authorarr[3]);
+    $parr=[];
+    preg_match("/<a href=\"#p([0-9]+)\">/Us", $result, $parr);
+    $this->p=(int)$parr[1];
+    $contsarr=[];
+    preg_match("/<div class=\"content\">(.+)<\/div>(\s+)(<div class=\"notice\">)?(<div id=\"sig[0-9]+\" class=\"signature\")?(<dl class=\"postprofile\" id=\"profile[0-9]\">)?/Us", $result, $contsarr);
+    $this->htmlconts=/*trim*/($contsarr[1]);
     $this->rawconts=trim(strip_tags($this->htmlconts));
+    if(strpos($result, '<img src="./styles/prosilver/imageset/icon_post_target_unread.gif" width="11" height="9" alt="Unread post" title="Unread post" />')!==FALSE)
+    {
+      $this->read=true;
+    }
+    else
+    {
+      $this->read=false;
+    }
     $dom = new \DOMDocument;
     @$dom->loadHTML($this->htmlconts);
     $nodes = $dom->getElementsByTagName('blockquote');
@@ -267,7 +285,7 @@ class phpBBPost
       return null;
     }
   }
-  private function curlrequest($url,$params=NULL)
+  public function curlrequest($url,$params=NULL)
   {
     $pparams=json_encode($params);
     echo "CURL REQUEST TO $url WITH PARAMS $pparams\n";
@@ -303,14 +321,22 @@ class phpBBPM
     $handle=$this->curlrequest(sprintf("%s/ucp.php?i=pm&mode=view&f=0&p=%u",$url,$p));
     $result=curl_exec($handle);
     curl_close($handle);
-    //file_put_contents("result.html",$result);
+    file_put_contents("result.html",$result);
     $result=preg_replace("~<blockquote(.*?)>(.*)</blockquote>~si","",' '.$result.' ',1);
-    $this->author=trim(strip_tags(explode("</a>",explode("To:</strong>",explode("<p class=\"author\">",$result)[1])[1])[0]));
-    $this->time=new DateTime(trim(explode("<br />",explode("</strong>",explode("<p class=\"author\">",$result)[1])[1])[0]));
-    $this->subject=strip_tags(explode("</h3>",explode("<h3 class=\"first\">",$result)[1])[0]);
-    $this->conts=strip_tags(explode("</div>",explode("<div class=\"content\">",$result)[1])[0]);
+    $authorarr=[];
+    preg_match("/<strong>From:<\/strong> <a href=\".\/memberlist.php\?mode=viewprofile&amp;u=[0-9]+\"(.+)?>(.+)<\/a>/Us", $result, $authorarr);
+    $this->author=$authorarr[2];
+    $timearr=[];
+    preg_match("/<strong>Sent:<\/strong> (.++)/Us", $result, $timearr);
+    $this->time=new \DateTime($timearr[1]);
+    $subjectarr=[];
+    preg_match("/<h3 class=\"first\">(.+)<\/h3>/Us", $result, $subjectarr);
+    $this->subject=$subjectarr[1];
+    $contsarr=[];
+    preg_match("/<div class=\"content\">(.+)<\/div>/Us", $result, $contsarr);
+    $this->conts=$contsarr[1];
   }
-  private function curlrequest($url,$params=NULL)
+  public function curlrequest($url,$params=NULL)
   {
     echo "CURL REQUEST TO $url WITH PARAMS ".json_encode($params)."\n";
     sleep(3);
