@@ -380,8 +380,7 @@ class phpBBPM
     {
       return in_array("author",explode(" ",$el->getAttribute("class")));
     }))[0];
-    $this->author=$authorblock->getElementsByTagName("a")[0]->textContent;
-    if(empty($authorblocks))
+    if(!$authorblock)
     {
       // Check to see if the PM has been deleted
       if(iterator_to_array($result->getElementsByTagName("p"))[2]->nodeValue==="You are not able to read this message because it was removed by the author.Return to previous folder")
@@ -393,6 +392,7 @@ class phpBBPM
       }
       return;
     }
+    $this->author=$authorblock->getElementsByTagName("a")[0]->textContent;
     preg_match("/Sent: (.+)/",$authorblock->textContent,$arr);
     $this->time=new \DateTime($arr[1]);
     $content=array_values(array_filter(iterator_to_array($result->getElementsByTagName("div")),function($el)
