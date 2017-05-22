@@ -95,7 +95,7 @@ class phpbbRemoteApi
     {
       return in_array("pagination",explode(" ",$el->getAttribute("class")));
     }));
-    preg_match("/([0-9]+) posts/", $divs[0]->textContent, $matches);
+    preg_match("/([0-9]+) posts?/", $divs[0]->textContent, $matches);
     return (int)$matches[1];
   }
   public function get_unread_pm()
