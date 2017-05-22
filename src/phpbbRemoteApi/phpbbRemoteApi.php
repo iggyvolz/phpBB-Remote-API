@@ -58,7 +58,11 @@ class phpbbRemoteApi
   {
     $result=$this->rawcurlrequest($url,$params);
     $dom=new \DOMDocument();
-    @$dom->loadHTML($result);
+    // Ignore id errors
+    $previous_value = libxml_use_internal_errors(TRUE);
+    $dom->loadHTML($result);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous_value);
     return $dom;
   }
   public function get_page($f,$t,$s)
@@ -68,8 +72,10 @@ class phpbbRemoteApi
     {
       return in_array("post",explode(" ",$el->getAttribute("class")));
     }));
+    $i=0;
     foreach($posts as $post)
     {
+      $i++;
       $return[]=new phpBBPost($this->url,$f,$t,$s+$i,$post);
     }
     return $return;
@@ -140,8 +146,14 @@ class phpbbRemoteApi
   }*/
   public function create_post($f,$t,$message,$subject=null)
   {
-    $result=$this->curlrequest(sprintf("%s/posting.php?mode=reply&f=%u&t=%u",$this->url,$f,$t));
-    $form=$result->getElementById("postform");
+    // Attempt to create post three times - this is known to fail occasionally
+    for($i=0;$i<3;$i++)
+    {
+      $result=$this->curlrequest(sprintf("%s/posting.php?mode=reply&f=%u&t=%u",$this->url,$f,$t));
+      $form=$result->getElementById("postform");
+      // Got form successfully, break out
+      if($form) break;
+    }
     $inputs=$this->get_inputs($form);
     foreach($inputs as $key=>$val)
     {
@@ -343,7 +355,11 @@ class phpBBPost
     $result=curl_exec($handle);
     curl_close($handle);
     $dom=new \DOMDocument();
-    @$dom->loadHTML($result);
+    // Ignore id errors
+    $previous_value = libxml_use_internal_errors(TRUE);
+    $dom->loadHTML($result);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous_value);
     return $dom;
   }
 }
@@ -353,6 +369,9 @@ class phpBBPM
   public $subject;
   public $conts;
   public $author;
+  public $rawconts;
+  public $rawcontsnoquotes;
+  public $deleted;
   public function __construct($url,$p)
   {
     $this->p=$p;
@@ -362,7 +381,19 @@ class phpBBPM
       return in_array("author",explode(" ",$el->getAttribute("class")));
     }))[0];
     $this->author=$authorblock->getElementsByTagName("a")[0]->textContent;
-    preg_match("/Sent: (.+) +From/U",$authorblock->textContent,$arr);
+    if(empty($authorblocks))
+    {
+      // Check to see if the PM has been deleted
+      if(iterator_to_array($result->getElementsByTagName("p"))[2]->nodeValue==="You are not able to read this message because it was removed by the author.Return to previous folder")
+      {
+        // Delete the PM from our inbox
+        $this->api->delete_pm($p);
+        $this->deleted=true;
+        return;
+      }
+      return;
+    }
+    preg_match("/Sent: (.+)/",$authorblock->textContent,$arr);
     $this->time=new \DateTime($arr[1]);
     $content=array_values(array_filter(iterator_to_array($result->getElementsByTagName("div")),function($el)
     {
@@ -390,7 +421,7 @@ class phpBBPM
   {
     $pparams=json_encode($params);
     echo "CURL REQUEST TO $url WITH PARAMS $pparams\n";
-    sleep(3);
+    sleep(5);
     $handle=curl_init($url);
     curl_setopt($handle, CURLOPT_COOKIEFILE, phpbbRemoteApi::COOKIE_FILE);
     curl_setopt($handle, CURLOPT_COOKIEJAR,   phpbbRemoteApi::COOKIE_FILE);
@@ -409,7 +440,11 @@ class phpBBPM
     $result=curl_exec($handle);
     curl_close($handle);
     $dom=new \DOMDocument();
-    @$dom->loadHTML($result);
+    // Ignore id errors
+    $previous_value = libxml_use_internal_errors(TRUE);
+    $dom->loadHTML($result);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previous_value);
     return $dom;
   }
 }
