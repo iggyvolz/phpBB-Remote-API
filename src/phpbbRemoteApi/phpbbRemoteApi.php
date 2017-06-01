@@ -30,7 +30,7 @@ class phpbbRemoteApi
     $result=$this->curlrequest(sprintf("%s/ucp.php?mode=login",$this->url),["username"=>$this->user,"password"=>$this->pass,"redirect"=>"./ucp.php","mode"=>"login","login"=>"Login"],true);
     return $result;
   }
-  public function rawcurlrequest($url,$params=NULL):string
+  public function rawcurlrequest($url,$params=NULL)//:string
   {
     $pparams=json_encode($params);
     echo "CURL REQUEST TO $url WITH PARAMS $pparams\n";
@@ -54,7 +54,7 @@ class phpbbRemoteApi
     curl_close($handle);
     return $result;
   }
-  public function curlrequest($url,$params=NULL):\DOMDocument
+  public function curlrequest($url,$params=NULL)//:\DOMDocument
   {
     $result=$this->rawcurlrequest($url,$params);
     $dom=new \DOMDocument();
@@ -241,7 +241,7 @@ class phpbbRemoteApi
       return null;
     }
   }
-  public function get_inputs(\DOMElement $dom):Array
+  public function get_inputs(\DOMElement $dom)//:Array
   {
     $ret=[];
     $list=$dom->getElementsByTagName("input");
@@ -332,7 +332,7 @@ class phpBBPost
       return null;
     }
   }
-  public function curlrequest($url,$params=NULL):\DOMDocument
+  public function curlrequest($url,$params=NULL)//:\DOMDocument
   {
     $pparams=json_encode($params);
     echo "CURL REQUEST TO $url WITH PARAMS $pparams\n";
@@ -417,7 +417,7 @@ class phpBBPM
     $this->rawcontsnoquotes=trim(strip_tags($result));
 
   }
-  public function curlrequest($url,$params=NULL):\DOMDocument
+  public function curlrequest($url,$params=NULL)//:\DOMDocument
   {
     $pparams=json_encode($params);
     echo "CURL REQUEST TO $url WITH PARAMS $pparams\n";
