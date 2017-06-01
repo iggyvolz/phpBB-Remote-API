@@ -230,7 +230,7 @@ class phpbbRemoteApi
     {
       return null;
     }
-    $a=$rows[0]->getElementsByTagName("a")[0];
+    $a=iterator_to_array($rows[0]->getElementsByTagName("a"))[0];
     preg_match("/\.\/memberlist.php\?mode=viewprofile&u=([0-9]+)/", $a->getAttribute("href"),$matches);
     if($matches[1])
     {
@@ -273,9 +273,9 @@ class phpBBPost
     {
       return in_array("author",explode(" ",$el->getAttribute("class")));
     }))[0];
-    preg_match("/\.\/viewtopic.php\?p=([0-9]+)/", $authorblock->getElementsByTagName("a")[0]->getAttribute("href"), $arr);
+    preg_match("/\.\/viewtopic.php\?p=([0-9]+)/", iterator_to_array($authorblock->getElementsByTagName("a"))[0]->getAttribute("href"), $arr);
     $this->p=(int)$arr[1];
-    $this->author=$authorblock->getElementsByTagName("a")[1]->textContent;
+    $this->author=iterator_to_array($authorblock->getElementsByTagName("a"))[1]->textContent;
     preg_match("/» (.+) /",$authorblock->textContent,$arr);
     $this->time=new \DateTime($arr[1]);
     $content=array_values(array_filter(iterator_to_array($result->getElementsByTagName("div")),function($el)
@@ -392,7 +392,7 @@ class phpBBPM
       }
       return;
     }
-    $this->author=$authorblock->getElementsByTagName("a")[0]->textContent;
+    $this->author=iterator_to_array($authorblock->getElementsByTagName("a"))[0]->textContent;
     preg_match("/Sent: (.+)/",$authorblock->textContent,$arr);
     $this->time=new \DateTime($arr[1]);
     $content=array_values(array_filter(iterator_to_array($result->getElementsByTagName("div")),function($el)
