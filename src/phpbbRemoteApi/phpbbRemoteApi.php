@@ -385,8 +385,7 @@ class phpBBPM
       // Check to see if the PM has been deleted
       if(iterator_to_array($result->getElementsByTagName("p"))[2]->nodeValue==="You are not able to read this message because it was removed by the author.Return to previous folder")
       {
-        // Delete the PM from our inbox
-        $this->api->delete_pm($p);
+        // Mark PM as deleted
         $this->deleted=true;
         return;
       }
