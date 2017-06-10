@@ -73,6 +73,7 @@ class phpbbRemoteApi
       return in_array("post",explode(" ",$el->getAttribute("class")));
     }));
     $i=0;
+    $return=[];
     foreach($posts as $post)
     {
       $i++;
